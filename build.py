@@ -409,6 +409,9 @@ if CTX.ANTICACHE_BUILD:
     if CTX.ANTICACHE_TIMESTAMPS_PRIME:
         CTX.CPPFLAGS += " -DANTICACHE_TIMESTAMPS_PRIME"
 
+    if CTX.ANTICACHE_CLOCK:
+        CTX.CPPFLAGS += " -DANTICACHE_CLOCK"
+
     # Bring in berkeleydb library
     CTX.SYSTEM_DIRS.append(os.path.join(CTX.OUTPUT_PREFIX, 'berkeleydb'))
     CTX.THIRD_PARTY_STATIC_LIBS.extend([

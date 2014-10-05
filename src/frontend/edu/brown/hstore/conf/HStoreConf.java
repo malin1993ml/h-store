@@ -726,6 +726,14 @@ public final class HStoreConf {
             experimental=true
         )
         public boolean anticache_timestamps_prime;
+
+        @ConfigProperty(
+            description="Enable the anti-cache clock eviction policy. This will replace the LRU and timestamps method." +
+                        "This requires that the system is compiled with ${site.anticache_enable} set to true.",
+            defaultBoolean=false,
+            experimental=true
+        )
+        public boolean anticache_clock;
         
         // ----------------------------------------------------------------------------
         // Storage MMAP Options
