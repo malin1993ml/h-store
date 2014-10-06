@@ -98,6 +98,9 @@ Table::Table(int tableAllocationTargetSize) :
     m_blocksRead = 0;
     m_bytesRead = 0;
     #endif
+#ifdef ANTICACHE_CLOCK
+    m_clockPosition = 0;
+#endif
 }
 
 Table::Table(int tableAllocationTargetSize, bool enableMMAP) :
@@ -137,6 +140,9 @@ Table::Table(int tableAllocationTargetSize, bool enableMMAP) :
     m_blocksRead = 0;
     m_bytesRead = 0;
     #endif
+#ifdef ANTICACHE_CLOCK
+    m_clockPosition = 0;
+#endif
 }
 
 Table::~Table() {

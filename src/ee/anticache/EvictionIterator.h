@@ -66,6 +66,9 @@ public:
 #ifdef ANTICACHE_TIMESTAMPS
     void reserve(int64_t amount);
 #endif
+#ifdef ANTICACHE_CLOCK
+    void initClock(int clockPosition);
+#endif
 
     class EvictionTuple {
     public:
@@ -98,6 +101,11 @@ private:
 #ifdef ANTICACHE_TIMESTAMPS_PRIME
     enum { prime_size = 25 };
     static const int prime_list[prime_size];
+#endif
+
+#ifdef ANTICACHE_CLOCK
+    int initial_position;
+    int scanned_times;
 #endif
 
 }; 

@@ -412,13 +412,17 @@ protected:
 #endif
 
 #ifdef ANTICACHE_TIMESTAMPS_PRIME
-    // track the position of where we're eviction so far
+    // track the position where we're evicting so far
     std::vector<int> m_evictPosition;
 
     // which prime we use as the step
     std::vector<int> m_stepPrime;
 #endif
 
+#ifdef ANTICACHE_CLOCK
+    std::vector<int64_t> m_clock;
+    int m_clockPosition;
+#endif
 
 #ifdef MEMCHECK_NOFREELIST
     int64_t m_deletedTupleCount;
@@ -511,6 +515,9 @@ inline void Table::allocateNextBlock() {
 #ifdef ANTICACHE_TIMESTAMPS_PRIME
     m_evictPosition.push_back(0);
     m_stepPrime.push_back(-1);
+#endif
+#ifdef ANTICACHE_CLOCK
+    m_clock.insert(m_clock.end(), m_tuplesPerBlock / 64 + 1, 0);
 #endif
 #ifdef MEMCHECK_NOFREELIST
     assert(m_allocatedTuplePointers.insert(memory).second);

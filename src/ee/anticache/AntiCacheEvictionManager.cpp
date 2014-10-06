@@ -133,7 +133,17 @@ bool AntiCacheEvictionManager::updateUnevictedTuple(PersistentTable* table, Tabl
     if(table->getEvictedTable() == NULL || table->isBatchEvicted())  // no need to maintain chain for non-evictable tables or batch evicted tables
         return true;
 
+#ifdef ANTICACHE_CLOCK
+    int current_tuple_id = table->getTupleID(tuple->address());
+    int clock_id = current_tuple_id / 64;
+    int clock_offset = current_tuple_id % 64;
+
+    table->m_clock[clock_id] &= ~(1 << clock_offset);
+
+#else
+
 #ifndef ANTICACHE_TIMESTAMPS
+#ifndef ANTICACHE_CLOCK
     int tuples_in_chain;
     int current_tuple_id = table->getTupleID(tuple->address()); // scan blocks for this tuple
     
@@ -168,6 +178,9 @@ bool AntiCacheEvictionManager::updateUnevictedTuple(PersistentTable* table, Tabl
     // set timestamp to the coldest
     tuple->setColdTimeStamp();
 #endif
+
+#endif
+#endif
     
     return true; 
 }
@@ -177,8 +190,17 @@ bool AntiCacheEvictionManager::updateTuple(PersistentTable* table, TableTuple* t
     if (table->getEvictedTable() == NULL || table->isBatchEvicted())  // no need to maintain chain for non-evictable tables or batch evicted tables
         return true; 
 
+#ifdef ANTICACHE_CLOCK
+    int current_tuple_id = table->getTupleID(tuple->address());
+    int clock_id = current_tuple_id / 64;
+    int clock_offset = current_tuple_id % 64;
+
+    table->m_clock[clock_id] |= 1 << clock_offset;
+
+#else
 
 #ifndef ANTICACHE_TIMESTAMPS
+#ifndef ANTICACHE_CLOCK
     int SAMPLE_RATE = 100; // aLRU sampling rate
 
     int tuples_in_chain;
@@ -254,11 +276,15 @@ bool AntiCacheEvictionManager::updateTuple(PersistentTable* table, TableTuple* t
     TableTuple update_tuple(tuple->address(), table->m_schema);
     update_tuple.setTimeStamp();
 #endif
+
+#endif
+#endif
         
     return true; 
 }
 
 #ifndef ANTICACHE_TIMESTAMPS
+#ifndef ANTICACHE_CLOCK
 bool AntiCacheEvictionManager::removeTuple(PersistentTable* table, TableTuple* tuple) {
     int current_tuple_id = table->getTupleID(tuple->address());
     
@@ -489,6 +515,7 @@ bool AntiCacheEvictionManager::removeTupleSingleLinkedList(PersistentTable* tabl
     return false; 
 }
 #endif
+#endif
 
 Table* AntiCacheEvictionManager::evictBlock(PersistentTable *table, long blockSize, int numBlocks) {
     int32_t lastTuplesEvicted = table->getTuplesEvicted();
@@ -550,6 +577,9 @@ bool AntiCacheEvictionManager::evictBlockToDisk(PersistentTable *table, const lo
 #ifdef ANTICACHE_TIMESTAMPS
     evict_itr.reserve((int64_t)block_size * num_blocks);
 #endif
+#ifdef ANTICACHE_CLOCK
+    evict_itr.initClock(table->m_clockPosition);
+#endif
 
     for(int i = 0; i < num_blocks; i++)
     {
@@ -593,8 +623,10 @@ bool AntiCacheEvictionManager::evictBlockToDisk(PersistentTable *table, const lo
             //current_tuple_start_position = out.position();
 
             #ifndef ANTICACHE_TIMESTAMPS
+            #ifndef ANTICACHE_CLOCK
             // remove the tuple from the eviction chain
             removeTuple(table, &tuple);
+            #endif
             #endif
 
             if (tuple.isEvicted()) {
@@ -761,6 +793,9 @@ bool AntiCacheEvictionManager::evictBlockToDiskInBatch(PersistentTable *table, P
     // TODO: what should I do with this?
     evict_itr.reserve((int64_t)block_size * num_blocks / 2);
 #endif
+#ifdef ANTICACHE_CLOCK
+    evict_itr.initClock(table->m_clockPosition);
+#endif
 
     for(int i = 0; i < num_blocks; i++)
     {
@@ -860,8 +895,10 @@ bool AntiCacheEvictionManager::evictBlockToDiskInBatch(PersistentTable *table, P
             parentTuples++;
 
 #ifndef ANTICACHE_TIMESTAMPS
+#ifndef ANTICACHE_CLOCK
             // remove the tuple from the eviction chain
             removeTuple(table, &tuple);
+#endif
 #endif
             if (tuple.isEvicted()) {
                 VOLT_INFO("Tuple %d is already evicted. Skipping", table->getTupleID(tuple.address()));
@@ -1175,7 +1212,9 @@ bool AntiCacheEvictionManager::mergeUnevictedTuples(PersistentTable *table) {
 
     //int active_tuple_count = (int)table->activeTupleCount();
 #ifndef ANTICACHE_TIMESTAMPS
+#ifndef ANTICACHE_CLOCK
     //int tuples_in_eviction_chain = (int)table->getNumTuplesInEvictionChain();
+#endif
 #endif
 
 #ifdef VOLT_INFO_ENABLED
@@ -1284,7 +1323,9 @@ bool AntiCacheEvictionManager::mergeUnevictedTuples(PersistentTable *table) {
 
     //VOLT_ERROR("Active Tuple Count: %d -- %d", (int)active_tuple_count, (int)table->activeTupleCount());
 #ifndef ANTICACHE_TIMESTAMPS
+#ifndef ANTICACHE_CLOCK
     VOLT_INFO("Tuples in Eviction Chain: %d -- %d", (int)tuples_in_eviction_chain, (int)table->getNumTuplesInEvictionChain());
+#endif
 #endif
 
 
@@ -1360,6 +1401,7 @@ void AntiCacheEvictionManager::throwEvictedAccessException() {
 
 
 #ifndef ANTICACHE_TIMESTAMPS
+#ifndef ANTICACHE_CLOCK
 
 // -----------------------------------------
 // Debugging Unility Methods
@@ -1400,6 +1442,7 @@ void AntiCacheEvictionManager::printLRUChain(PersistentTable* table, int max, bo
 
     VOLT_INFO("LRU CHAIN: %s", chain);
 }
+#endif
 #endif
 
 char* AntiCacheEvictionManager::itoa(uint32_t i)

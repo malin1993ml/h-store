@@ -166,6 +166,10 @@ public:
 };
 
 #ifndef ANTICACHE_TIMESTAMPS
+
+#ifdef ANTICACHE_CLOCK
+
+#else
 TEST_F(AntiCacheEvictionManagerTest, GetTupleID)
 {
     initTable(true); 
@@ -441,6 +445,8 @@ TEST_F(AntiCacheEvictionManagerTest, UpdateIndexPerformance)
 //     ASSERT_EQ(oldest_tuple_id, m_table->getNewestTupleID()); 
 //   
 // }
+#endif
+
 #else
 TEST_F(AntiCacheEvictionManagerTest, GetTupleTimeStamp)
 {

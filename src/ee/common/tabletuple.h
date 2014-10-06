@@ -301,6 +301,8 @@ public:
     
 #ifdef ANTICACHE
 	#ifndef ANTICACHE_TIMESTAMPS
+    #ifdef ANTICACHE_CLOCK
+    #else
     	inline uint32_t getNextTupleInChain() {
         	uint32_t tuple_id = 0;
 	        memcpy(&tuple_id, m_data+TUPLE_HEADER_SIZE-4, 4);
@@ -322,6 +324,7 @@ public:
     	inline void setPreviousTupleInChain(uint32_t prev) {
         	memcpy(m_data+TUPLE_HEADER_SIZE-8, &prev, 4);
     	}
+    #endif
 
 	#else
     	inline uint32_t getTimeStamp() {

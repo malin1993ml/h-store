@@ -244,6 +244,13 @@ void EvictionIterator::reserve(int64_t amount) {
 }
 #endif
 
+#ifdef ANTICACHE_CLOCK
+void EvictionIterator::initClock(int clockPosition) {
+    initial_position = clockPosition;
+    scanned_times = 0;
+}
+#endif
+
 
 EvictionIterator::~EvictionIterator()
 {
@@ -264,12 +271,16 @@ bool EvictionIterator::hasNext()
         return false; 
 
 #ifndef ANTICACHE_TIMESTAMPS
+#ifdef ANTICACHE_CLOCK
+    if (scanned_times == 2) return false;
+#else
     if(current_tuple_id == ptable->getNewestTupleID())
         return false;
     if(ptable->getNumTuplesInEvictionChain() == 0) { // there are no tuples in the chain
         VOLT_DEBUG("There are no tuples in the eviction chain.");
         return false; 
     }
+#endif
 #else
     if (current_tuple_id == m_size)
         return false;
@@ -281,6 +292,48 @@ bool EvictionIterator::hasNext()
 bool EvictionIterator::next(TableTuple &tuple)
 {    
 #ifndef ANTICACHE_TIMESTAMPS
+
+#ifdef ANTICACHE_CLOCK
+    PersistentTable* ptable = static_cast<PersistentTable*>(table);
+    int *position = &ptable->m_clockPosition;
+
+    int clock_id = *position / 64;
+    int clock_offset = *position % 64;
+    
+    while (1) {
+        current_tuple->move(ptable->dataPtrForTuple(*position));
+        //printf("%d %d %d\n", *position, clock_id, clock_offset);
+        //printf("%d %d %ld %d\n", *position, scanned_times, ptable->usedTupleCount(), (bool)(ptable->m_clock[clock_id] & (1 << clock_offset)));
+        // whether this tuple is used during period of time?
+        if ((ptable->m_clock[clock_id] & (1 << clock_offset)) || !current_tuple->isActive() || current_tuple->isEvicted()) {
+            ptable->m_clock[clock_id] &= ~(1 << clock_offset);
+            (*position)++;
+            clock_offset++;
+            if (clock_offset == 64) {
+                clock_offset = 0;
+                clock_id ++;
+            }
+            if (*position == ptable->usedTupleCount()) {
+                *position = 0;
+                clock_id = 0;
+                clock_offset = 0;
+            }
+            if (*position == initial_position) {
+                scanned_times++;
+            //printf("%d %d %ld\n", *position, scanned_times, ptable->usedTupleCount());
+                if (scanned_times == 2)
+                    return false;
+            }
+            continue;
+        }
+        //printf("%d %d %ld\n", *position, scanned_times, ptable->usedTupleCount());
+
+        // return this tuple
+        tuple.move(current_tuple->address());
+        break;
+    }
+        
+#else
     PersistentTable* ptable = static_cast<PersistentTable*>(table);
 
     if(current_tuple_id == ptable->getNewestTupleID()) // we've already returned the last tuple in the chain
@@ -311,6 +364,8 @@ bool EvictionIterator::next(TableTuple &tuple)
     tuple.move(current_tuple->address()); 
 
     VOLT_DEBUG("current_tuple_id = %d", current_tuple_id);
+#endif
+
 #else
     tuple.move(candidates[current_tuple_id].m_addr);
     current_tuple_id++;

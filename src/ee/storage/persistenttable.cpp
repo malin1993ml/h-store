@@ -768,8 +768,10 @@ bool PersistentTable::deleteTuple(TableTuple &target, bool deleteAllocatedString
 
 #ifdef ANTICACHE
 #ifndef ANTICACHE_TIMESTAMPS
+#ifndef ANTICACHE_CLOCK
     AntiCacheEvictionManager* eviction_manager = m_executorContext->getAntiCacheEvictionManager();
     eviction_manager->removeTuple(this, &target); 
+#endif
 #endif
 #endif
 
