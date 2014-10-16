@@ -222,6 +222,11 @@ public:
     inline int32_t getBlocksRead() const { return (m_blocksRead); }
     inline int64_t getBytesRead()  const { return (m_bytesRead); }
     #endif
+
+#ifdef ANTICACHE_CLOCK
+    inline int32_t getClockPosition()  const { return (m_clockPosition); }
+    char * dataPtrForTuplePublic(const int index) const { return dataPtrForTuple(index); };
+#endif
     
     int getTupleID(const char* tuple_address); 
 

@@ -169,6 +169,57 @@ public:
 
 #ifdef ANTICACHE_CLOCK
 
+TEST_F(AntiCacheEvictionManagerTest, TestAnticacheClock)
+{
+    int num_tuples = 10; 
+
+    initTable(true); 
+      
+    TableTuple tuple = m_table->tempTuple();
+        
+    for(int i = 0; i < num_tuples; i++) // insert 10 tuples
+    {
+        tuple.setNValue(0, ValueFactory::getIntegerValue(m_tuplesInserted++));
+        tuple.setNValue(1, ValueFactory::getIntegerValue(rand()));
+        m_table->insertTuple(tuple);
+    }
+    
+    EvictionIterator itr(m_table); 
+
+    itr.initClock(m_table->getClockPosition());
+
+    // test that the initial clock position is 0
+    ASSERT_TRUE(itr.hasNext());
+
+    itr.next(tuple);
+    ASSERT_EQ(m_table->getTupleID(tuple.address()), 0);
+
+    AntiCacheEvictionManager* eviction_manager = m_engine->getExecutorContext()->getAntiCacheEvictionManager();
+
+    // test that the clock algorithm works
+    tuple.move(m_table->dataPtrForTuplePublic(1));
+    eviction_manager->updateTuple(m_table, &tuple, false); 
+
+    tuple.move(m_table->dataPtrForTuplePublic(3));
+    eviction_manager->updateTuple(m_table, &tuple, false); 
+
+    EvictionIterator itr2(m_table); 
+
+    itr2.initClock(m_table->getClockPosition());
+
+    ASSERT_TRUE(itr2.hasNext());
+
+    itr2.next(tuple);
+    ASSERT_EQ(m_table->getTupleID(tuple.address()), 2);
+
+    ASSERT_TRUE(itr2.hasNext());
+
+    itr2.next(tuple);
+    ASSERT_EQ(m_table->getTupleID(tuple.address()), 4);
+
+    cleanupTable();
+}
+
 #else
 TEST_F(AntiCacheEvictionManagerTest, GetTupleID)
 {

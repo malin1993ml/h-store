@@ -299,40 +299,45 @@ bool EvictionIterator::next(TableTuple &tuple)
 
     int clock_id = *position / 64;
     int clock_offset = *position % 64;
+    bool key;
     
     while (1) {
         current_tuple->move(ptable->dataPtrForTuple(*position));
+        key = true;
         //printf("%d %d %d\n", *position, clock_id, clock_offset);
         //printf("%d %d %ld %d\n", *position, scanned_times, ptable->usedTupleCount(), (bool)(ptable->m_clock[clock_id] & (1 << clock_offset)));
+
         // whether this tuple is used during period of time?
-        if ((ptable->m_clock[clock_id] & (1 << clock_offset)) || !current_tuple->isActive() || current_tuple->isEvicted()) {
-            ptable->m_clock[clock_id] &= ~(1 << clock_offset);
-            (*position)++;
-            clock_offset++;
-            if (clock_offset == 64) {
-                clock_offset = 0;
-                clock_id ++;
-            }
-            if (*position == ptable->usedTupleCount()) {
-                *position = 0;
-                clock_id = 0;
-                clock_offset = 0;
-            }
-            if (*position == initial_position) {
-                scanned_times++;
+        if ((ptable->m_clock[clock_id] & (1 << clock_offset)) || !current_tuple->isActive() || current_tuple->isEvicted())
+            key = false;
+
+        ptable->m_clock[clock_id] &= ~(1 << clock_offset);
+        (*position)++;
+        clock_offset++;
+        if (clock_offset == 64) {
+            clock_offset = 0;
+            clock_id ++;
+        }
+        if (*position == ptable->usedTupleCount()) {
+            *position = 0;
+            clock_id = 0;
+            clock_offset = 0;
+        }
+        if (*position == initial_position) {
+            scanned_times++;
             //printf("%d %d %ld\n", *position, scanned_times, ptable->usedTupleCount());
-                if (scanned_times == 2)
-                    return false;
-            }
-            continue;
+            if (scanned_times == 2)
+                return false;
         }
         //printf("%d %d %ld\n", *position, scanned_times, ptable->usedTupleCount());
 
-        // return this tuple
-        tuple.move(current_tuple->address());
-        break;
+        if (key) {
+            // return this tuple
+            tuple.move(current_tuple->address());
+            break;
+        }
     }
-        
+
 #else
     PersistentTable* ptable = static_cast<PersistentTable*>(table);
 
