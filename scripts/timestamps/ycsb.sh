@@ -13,17 +13,18 @@ exit $exit_status
 
 ENABLE_ANTICACHE=true
 
-SITE_HOST="dev3.db.pdl.cmu.local"
+#SITE_HOST="dev3.db.pdl.cmu.local"
+SITE_HOST="localhost"
 
 CLIENT_HOSTS=( \
+    "localhost" \
+    "localhost" \
     #"localhost" \
     #"localhost" \
-    #"localhost" \
-    #"localhost" \
-    "dev1.db.pdl.cmu.local" \
-    "dev1.db.pdl.cmu.local" \
-    "dev1.db.pdl.cmu.local" \
-    "dev1.db.pdl.cmu.local" \
+    #"dev1.db.pdl.cmu.local" \
+    #"dev1.db.pdl.cmu.local" \
+    #"dev1.db.pdl.cmu.local" \
+    #"dev1.db.pdl.cmu.local" \
     )
 
 BASE_CLIENT_THREADS=1
@@ -37,8 +38,8 @@ OUTPUT_DIR="~/data/ycsb/read-heavy/2/80-20"
 
 for skew in 0.8 1.01 1.1 1.2; do
     for round in 1 2 3; do
-        OUTPUT_PREFIX="test/ycsb-T500-NoLoop/$round-ycsb1G-flru-T500-S$skew"
-        LOG_PREFIX="logs/test/ycsb-T500-NoLoop/$round-ycsb1G-flru-T500-S$skew"
+        OUTPUT_PREFIX="output/ycsb-T500-timestamp/$round-ycsb1G-flru-T500-S$skew"
+        LOG_PREFIX="logs/test/ycsb-T500/$round-ycsb1G-flru-T500-S$skew"
         echo $OUTPUT_PREFIX
         sed -i '$ d' "properties/benchmarks/ycsb.properties"
         echo "skew_factor = $skew" >> "properties/benchmarks/ycsb.properties"
@@ -91,9 +92,13 @@ for skew in 0.8 1.01 1.1 1.2; do
             "-Dclient.throttle_backoff=100" \
             "-Dclient.output_anticache_evictions=${OUTPUT_PREFIX}-evictions.csv" \
             "-Dclient.output_memory=${OUTPUT_PREFIX}-memory.csv" \
-            "-Dclient.weights=\"ReadRecord:50,UpdateRecord:50,*:0\""
+            "-Dclient.output_index_stats=${OUTPUT_PREFIX}-indexes.csv" \
+            #"-Dclient.output_anticache_access=${OUTPUT_PREFIX}-access.csv"\
+            "-Dclient.output_txn_profiling=${OUTPUT_PREFIX}-txnprofiler.csv"\
+            "-Dclient.output_exec_profiling=${OUTPUT_PREFIX}-execprofiler.csv"\
+            "-Dclient.weights=\"ReadRecord:50,UpdateRecord:50,*:0\""\
 
-            # Anti-Caching Experiments
+        # Anti-Caching Experiments
         "-Dsite.anticache_enable=${ENABLE_ANTICACHE}" \
             "-Dsite.anticache_timestamps=${ENABLE_TIMESTAMPS}" \
             "-Dsite.anticache_batching=true" \
@@ -112,7 +117,7 @@ for skew in 0.8 1.01 1.1 1.2; do
             "-Dclient.output_csv=${OUTPUT_PREFIX}-results.csv" \
 
             # CLIENT DEBUG
-            "-Dclient.output_txn_counters=${OUTPUT_PREFIX}-txncounters.csv" \
+        "-Dclient.output_txn_counters=${OUTPUT_PREFIX}-txncounters.csv" \
             "-Dclient.output_clients=false" \
             "-Dclient.profiling=false" \
             "-Dclient.output_response_status=false" \

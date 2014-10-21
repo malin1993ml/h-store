@@ -13,15 +13,15 @@ exit $exit_status
 
 ENABLE_ANTICACHE=true
 
-SITE_HOST="dev2.db.pdl.cmu.local"
+SITE_HOST="localhost"
 
 CLIENT_HOSTS=( \
 #        "client1" \
 #        "client2" \
-        "dev2.db.pdl.cmu.local" \
-        "dev2.db.pdl.cmu.local" \
-        "dev2.db.pdl.cmu.local" \
-        "dev2.db.pdl.cmu.local" \
+        "localhost" \
+        "localhost" \
+        "localhost" \
+        "localhost" \
         #"dev1.db.pdl.cmu.local" \
         #"dev1.db.pdl.cmu.local" \
 )
@@ -39,7 +39,7 @@ ANTICACHE_BLOCK_SIZE=1048576
 ANTICACHE_THRESHOLD=.75
 
 for round in 1 2 3; do
-OUTPUT_PREFIX="tpcc-NoLoop/$round-tpcc-timestamps-T500-E50"
+OUTPUT_PREFIX="output/$round-tpcc-timestamps-T500-E50"
 echo $OUTPUT_PREFIX
 BASE_ARGS=( \
     # SITE DEBUG
@@ -87,6 +87,10 @@ BASE_ARGS=( \
     "-Dclient.throttle_backoff=100" \
     "-Dclient.output_anticache_evictions=${OUTPUT_PREFIX}-evictions.csv" \
     "-Dclient.output_memory=${OUTPUT_PREFIX}-memory.csv" \
+    "-Dclient.output_index_stats=${OUTPUT_PREFIX}-indexes" \
+    "-Dclient.output_anticache_access=${OUTPUT_PREFIX}-access"\
+    "-Dclient.output_txn_profiling=${OUTPUT_PREFIX}-txnprofiler"\
+    "-Dclient.output_exec_profiling=${OUTPUT_PREFIX}-execprofiler"\
 
     # Anti-Caching Experiments
     "-Dsite.anticache_enable=${ENABLE_ANTICACHE}" \
@@ -106,7 +110,7 @@ BASE_ARGS=( \
     "-Dclient.output_interval=true" \
 
     # CLIENT DEBUG
-    #    "-Dclient.output_txn_counters=txncounters.csv" \
+    "-Dclient.output_txn_counters=${OUTPUT_PREFIX}-txncounters.csv" \
     "-Dclient.output_clients=false" \
     "-Dclient.profiling=false" \
     "-Dclient.output_response_status=false" \
