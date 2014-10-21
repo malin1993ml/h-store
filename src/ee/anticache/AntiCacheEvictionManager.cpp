@@ -200,7 +200,6 @@ bool AntiCacheEvictionManager::updateTuple(PersistentTable* table, TableTuple* t
 #else
 
 #ifndef ANTICACHE_TIMESTAMPS
-#ifndef ANTICACHE_CLOCK
     int SAMPLE_RATE = 100; // aLRU sampling rate
 
     int tuples_in_chain;
@@ -277,7 +276,6 @@ bool AntiCacheEvictionManager::updateTuple(PersistentTable* table, TableTuple* t
     update_tuple.setTimeStamp();
 #endif
 
-#endif
 #endif
         
     return true; 
