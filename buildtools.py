@@ -46,9 +46,9 @@ class BuildContext:
         self.ANTICACHE_NVM = False
         self.ANTICACHE_DRAM = False
         self.ARIES= False
-        self.ANTICACHE_TIMESTAMPS = False
+        self.ANTICACHE_TIMESTAMPS = True
         self.ANTICACHE_TIMESTAMPS_PRIME = True
-        self.ANTICACHE_CLOCK = True
+        self.ANTICACHE_CLOCK = False
 
         for arg in [x.strip().upper() for x in args]:
             if arg in ["DEBUG", "RELEASE", "MEMCHECK", "MEMCHECK_NOFREELIST"]:
