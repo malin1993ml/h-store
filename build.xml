@@ -890,6 +890,7 @@ NATIVE EE STUFF
         <arg value="ANTICACHE_TIMESTAMPS=${site.anticache_timestamps}" />
         <arg value="ANTICACHE_TIMESTAMPS_PRIME=${site.anticache_timestamps_prime}" />
         <arg value="ANTICACHE_CLOCK=${site.anticache_clock}" />
+        <arg value="ANTICACHE_CLOCK_SIZE=${site.anticache_clock_size}" />
         <arg value="${build}" />
     </exec>
 </target>

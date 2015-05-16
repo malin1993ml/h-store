@@ -411,6 +411,7 @@ if CTX.ANTICACHE_BUILD:
 
     if CTX.ANTICACHE_CLOCK:
         CTX.CPPFLAGS += " -DANTICACHE_CLOCK"
+        CTX.CPPFLAGS += " -DANTICACHE_CLOCK_SIZE=%d" % CTX.ANTICACHE_CLOCK_SIZE
 
     # Bring in berkeleydb library
     CTX.SYSTEM_DIRS.append(os.path.join(CTX.OUTPUT_PREFIX, 'berkeleydb'))

@@ -734,6 +734,13 @@ public final class HStoreConf {
             experimental=true
         )
         public boolean anticache_clock;
+
+        @ConfigProperty(
+            description="Clock size, in bit, for every tuple.",
+            defaultInt=1,
+            experimental=true
+        )
+        public int anticache_clock_size;
         
         // ----------------------------------------------------------------------------
         // Storage MMAP Options
