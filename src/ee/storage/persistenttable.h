@@ -439,7 +439,7 @@ inline void PersistentTable::allocateNextBlock() {
     m_stepPrime.push_back(-1);
 #endif
 #ifdef ANTICACHE_CLOCK
-    m_clock.insert(m_clock.end(), m_tuplesPerBlock / 64 + 1, 0);
+    m_clock.insert(m_clock.end(), m_tuplesPerBlock * ANTICACHE_CLOCK_SIZE / 64 + 1, 0);
 #endif
 #ifdef MEMCHECK_NOFREELIST
     assert(m_allocatedTuplePointers.insert(memory).second);

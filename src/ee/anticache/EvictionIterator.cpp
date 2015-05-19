@@ -272,7 +272,7 @@ bool EvictionIterator::hasNext()
 
 #ifndef ANTICACHE_TIMESTAMPS
 #ifdef ANTICACHE_CLOCK
-    if (scanned_times == 2) return false;
+    if (scanned_times == (1 << ANTICACHE_CLOCK_SIZE)) return false;
 #else
     if(current_tuple_id == ptable->getNewestTupleID())
         return false;
@@ -297,24 +297,33 @@ bool EvictionIterator::next(TableTuple &tuple)
     PersistentTable* ptable = static_cast<PersistentTable*>(table);
     int *position = &ptable->m_clockPosition;
 
-    int clock_id = *position / 64;
-    int clock_offset = *position % 64;
+    int clock_size = ANTICACHE_CLOCK_SIZE;
+    int clock_mask = (1 << clock_size) - 1;
+    int clock_num = 64 / clock_size;
+    int clock_id = *position / clock_num;
+    int clock_offset = *position % clock_num;
     bool key;
     
+
     while (1) {
         current_tuple->move(ptable->dataPtrForTuple(*position));
         key = true;
-        //printf("%d %d %d\n", *position, clock_id, clock_offset);
+        int64_t clock_value = (ptable->m_clock[clock_id] >> clock_offset * clock_size) & clock_mask;
+        //printf("%d %ld %d %ld\n", *position, clock_value, clock_offset, ptable->m_clock[clock_id]);
         //printf("%d %d %ld %d\n", *position, scanned_times, ptable->usedTupleCount(), (bool)(ptable->m_clock[clock_id] & (1 << clock_offset)));
 
         // whether this tuple is used during period of time?
-        if ((ptable->m_clock[clock_id] & (1 << clock_offset)) || !current_tuple->isActive() || current_tuple->isEvicted())
+        if ((clock_value) || !current_tuple->isActive() || current_tuple->isEvicted())
             key = false;
 
-        ptable->m_clock[clock_id] &= ~(1 << clock_offset);
+        if (clock_value) clock_value--;
+        ptable->m_clock[clock_id] &= ~((int64_t)clock_mask << clock_offset * clock_size);
+        ptable->m_clock[clock_id] |= clock_value << clock_offset * clock_size;
+        //ptable->m_clock[clock_id] &= ~(1 << clock_offset);
+
         (*position)++;
         clock_offset++;
-        if (clock_offset == 64) {
+        if (clock_offset == clock_num) {
             clock_offset = 0;
             clock_id ++;
         }
@@ -326,7 +335,7 @@ bool EvictionIterator::next(TableTuple &tuple)
         if (*position == initial_position) {
             scanned_times++;
             //printf("%d %d %ld\n", *position, scanned_times, ptable->usedTupleCount());
-            if (scanned_times == 2)
+            if (scanned_times == clock_mask + 1)
                 return false;
         }
         //printf("%d %d %ld\n", *position, scanned_times, ptable->usedTupleCount());

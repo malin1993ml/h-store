@@ -135,10 +135,12 @@ bool AntiCacheEvictionManager::updateUnevictedTuple(PersistentTable* table, Tabl
 
 #ifdef ANTICACHE_CLOCK
     int current_tuple_id = table->getTupleID(tuple->address());
-    int clock_id = current_tuple_id / 64;
-    int clock_offset = current_tuple_id % 64;
+    int clock_size = ANTICACHE_CLOCK_SIZE;
+    int clock_num = 64 / clock_size;
+    int clock_id = current_tuple_id / clock_num;
+    int clock_offset = current_tuple_id % clock_num;
 
-    table->m_clock[clock_id] &= ~(1 << clock_offset);
+    table->m_clock[clock_id] &= ~(((1LL << clock_size) - 1) << clock_offset * clock_size);
 
 #else
 
@@ -162,11 +164,11 @@ bool AntiCacheEvictionManager::updateUnevictedTuple(PersistentTable* table, Tabl
     // update "next" pointer
     tuple->setNextTupleInChain(table->getOldestTupleID()); 
     
-#ifdef ANTICACHE_REVERSIBLE_LRU
+    #ifdef ANTICACHE_REVERSIBLE_LRU
     // update "previous" pointer
     TableTuple oldest_tuple(table->dataPtrForTuple(table->getOldestTupleID()), table->m_schema);
     oldest_tuple.setPreviousTupleInChain(current_tuple_id);
-#endif
+    #endif
     
     table->setOldestTupleID(current_tuple_id);
     
@@ -192,11 +194,18 @@ bool AntiCacheEvictionManager::updateTuple(PersistentTable* table, TableTuple* t
 
 #ifdef ANTICACHE_CLOCK
     int current_tuple_id = table->getTupleID(tuple->address());
-    int clock_id = current_tuple_id / 64;
-    int clock_offset = current_tuple_id % 64;
+    int clock_size = ANTICACHE_CLOCK_SIZE;
+    int clock_mask = (1 << clock_size) - 1;
+    int clock_num = 64 / clock_size;
+    int clock_id = current_tuple_id / clock_num;
+    int clock_offset = current_tuple_id % clock_num;
 
-    table->m_clock[clock_id] |= 1 << clock_offset;
-
+    int64_t clock_value = (table->m_clock[clock_id] >> clock_offset * clock_size) & clock_mask;
+    if (clock_value != clock_mask) clock_value += 1;
+    //printf("\n%d %d %ld %d\n", current_tuple_id, clock_offset, clock_value, clock_mask);
+    table->m_clock[clock_id] &= ~((int64_t)clock_mask << clock_offset * clock_size);
+    table->m_clock[clock_id] |= clock_value << clock_offset * clock_size;
+    //printf("\n%d %d %ld %ld\n", current_tuple_id, clock_offset, (table->m_clock[clock_id] >> clock_offset * clock_size) & clock_mask, table->m_clock[clock_id]);
 #else
 
 #ifndef ANTICACHE_TIMESTAMPS
